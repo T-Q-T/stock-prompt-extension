@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Icon Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            margin: 10px 0;
+        }
+        button {
+            background: #0ea5e9;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0284c7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Prompt Stock Icon Generator</h1>
+        <p>This will generate placeholder icons for development. Click each button to download the icon.</p>
+        
+        <h3>16x16 Icon</h3>
+        <canvas id="icon16" width="16" height="16"></canvas>
+        <button onclick="downloadIcon('icon16', 'icon16.png')">Download 16x16</button>
+        
+        <h3>48x48 Icon</h3>
+        <canvas id="icon48" width="48" height="48"></canvas>
+        <button onclick="downloadIcon('icon48', 'icon48.png')">Download 48x48</button>
+        
+        <h3>128x128 Icon</h3>
+        <canvas id="icon128" width="128" height="128"></canvas>
+        <button onclick="downloadIcon('icon128', 'icon128.png')">Download 128x128</button>
+        
+        <p style="margin-top: 20px; color: #666; font-size: 14px;">
+            <strong>Note:</strong> These are placeholder icons for development. 
+            Replace them with professionally designed icons for production.
+        </p>
+    </div>
+
+    <script>
+        function drawIcon(canvasId, size) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Create gradient background
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            
+            // Draw message bubble
+            ctx.fillStyle = 'white';
+            const bubbleSize = size * 0.6;
+            const bubbleX = (size - bubbleSize) / 2;
+            const bubbleY = (size - bubbleSize) / 2 - size * 0.05;
+            
+            // Rounded rectangle for bubble
+            const radius = size * 0.1;
+            ctx.beginPath();
+            ctx.moveTo(bubbleX + radius, bubbleY);
+            ctx.lineTo(bubbleX + bubbleSize - radius, bubbleY);
+            ctx.quadraticCurveTo(bubbleX + bubbleSize, bubbleY, bubbleX + bubbleSize, bubbleY + radius);
+            ctx.lineTo(bubbleX + bubbleSize, bubbleY + bubbleSize - radius);
+            ctx.quadraticCurveTo(bubbleX + bubbleSize, bubbleY + bubbleSize, bubbleX + bubbleSize - radius, bubbleY + bubbleSize);
+            ctx.lineTo(bubbleX + radius, bubbleY + bubbleSize);
+            ctx.quadraticCurveTo(bubbleX, bubbleY + bubbleSize, bubbleX, bubbleY + bubbleSize - radius);
+            ctx.lineTo(bubbleX, bubbleY + radius);
+            ctx.quadraticCurveTo(bubbleX, bubbleY, bubbleX + radius, bubbleY);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw lines inside bubble (representing text)
+            if (size >= 48) {
+                ctx.fillStyle = '#667eea';
+                const lineWidth = bubbleSize * 0.5;
+                const lineHeight = size * 0.06;
+                const lineX = bubbleX + (bubbleSize - lineWidth) / 2;
+                const lineY = bubbleY + bubbleSize * 0.3;
+                
+                ctx.fillRect(lineX, lineY, lineWidth, lineHeight);
+                ctx.fillRect(lineX, lineY + lineHeight * 2, lineWidth * 0.7, lineHeight);
+            }
+        }
+        
+        function downloadIcon(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        
+        // Generate icons on load
+        window.onload = function() {
+            drawIcon('icon16', 16);
+            drawIcon('icon48', 48);
+            drawIcon('icon128', 128);
+        };
+    </script>
+</body>
+</html>
+
