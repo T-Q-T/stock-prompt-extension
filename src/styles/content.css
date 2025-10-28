@@ -56,7 +56,7 @@
   top: 0 !important;
   right: 0 !important;
   height: 100vh !important;
-  width: 384px !important;
+  width: 576px !important; /* 增加50%: 384 * 1.5 = 576 */
   z-index: 2147483646 !important;
   background: white !important;
   box-shadow: -2px 0 20px rgba(0, 0, 0, 0.15) !important;
