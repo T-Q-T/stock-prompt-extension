@@ -1,9 +1,9 @@
 import { Region, KLineParams, KLineResponse, KLineDataItem, KLineRawData, StockQueryHistory } from '@/types/stock';
 import { db } from './indexedDB';
 import { generateMAData } from './ma';
+import { getApiToken } from './configStorage';
 
 const API_BASE_URL = 'https://api.itick.org';
-const API_TOKEN = 'fa237211dcdb49c4a5a0d525680c4bc287c485c1a8bb4b23ae67d8e6515fe902';
 
 /**
  * 根据股票代码自动识别市场
@@ -36,6 +36,13 @@ export const getRegionByCode = (code: string): Region => {
  */
 export const fetchKLineData = async (params: KLineParams): Promise<KLineResponse> => {
   try {
+    // 获取用户配置的API Token
+    const apiToken = await getApiToken();
+    
+    if (!apiToken) {
+      throw new Error('未配置API Token，请先在设置中配置');
+    }
+
     const url = new URL(`${API_BASE_URL}/stock/kline`);
     url.searchParams.append('region', params.region);
     url.searchParams.append('code', params.code);
@@ -52,7 +59,7 @@ export const fetchKLineData = async (params: KLineParams): Promise<KLineResponse
       method: 'GET',
       headers: {
         'accept': 'application/json',
-        'token': API_TOKEN,
+        'token': apiToken,
       },
     });
 

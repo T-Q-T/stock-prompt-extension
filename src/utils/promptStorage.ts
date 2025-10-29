@@ -66,7 +66,12 @@ export const reorderFolders = async (folders: Folder[]): Promise<void> => {
 export const getPrompts = async (): Promise<Prompt[]> => {
   try {
     const prompts = await db.getAll<Prompt>('prompts');
-    return prompts.sort((a, b) => a.order - b.order);
+    // 确保所有prompts的folderId都是string | null，不是undefined
+    const normalizedPrompts = prompts.map(p => ({
+      ...p,
+      folderId: p.folderId === undefined ? null : p.folderId,
+    }));
+    return normalizedPrompts.sort((a, b) => a.order - b.order);
   } catch (error) {
     console.error('Failed to get prompts:', error);
     return [];
@@ -114,7 +119,20 @@ export const updatePrompt = async (
 ): Promise<void> => {
   const prompt = await db.get<Prompt>('prompts', id);
   if (prompt) {
-    Object.assign(prompt, updates, { updatedAt: Date.now() });
+    // 只更新明确定义的字段，过滤掉undefined值
+    Object.keys(updates).forEach(key => {
+      const value = updates[key as keyof typeof updates];
+      if (value !== undefined) {
+        (prompt as any)[key] = value;
+      }
+    });
+    
+    // 确保folderId始终是string | null，不是undefined
+    if ('folderId' in updates) {
+      prompt.folderId = updates.folderId ?? null;
+    }
+    
+    prompt.updatedAt = Date.now();
     await db.put('prompts', prompt);
   }
 };
@@ -154,7 +172,7 @@ export const searchAll = async (query: string): Promise<{ prompts: Prompt[], fol
   return { prompts, folders };
 };
 
-// ===== 数据迁移 =====
+// ===== 数据迁移和修复 =====
 
 export const migrateFromLocalStorage = async (): Promise<void> => {
   try {
@@ -188,6 +206,30 @@ export const migrateFromLocalStorage = async (): Promise<void> => {
     console.log('Migration completed');
   } catch (error) {
     console.error('Migration failed:', error);
+  }
+};
+
+// 修复folderId为undefined的数据
+export const fixUndefinedFolderIds = async (): Promise<void> => {
+  try {
+    const allPrompts = await db.getAll<Prompt>('prompts');
+    let fixedCount = 0;
+    
+    for (const prompt of allPrompts) {
+      // 检查folderId是否为undefined
+      if (prompt.folderId === undefined || (prompt.folderId as any) === 'undefined') {
+        console.log(`Fixing prompt ${prompt.id} (${prompt.title}) - folderId was undefined`);
+        prompt.folderId = null;
+        await db.put('prompts', prompt);
+        fixedCount++;
+      }
+    }
+    
+    if (fixedCount > 0) {
+      console.log(`✅ Fixed ${fixedCount} prompts with undefined folderId`);
+    }
+  } catch (error) {
+    console.error('Failed to fix undefined folderIds:', error);
   }
 };
 

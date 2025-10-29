@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Search, Copy, Check } from 'lucide-react';
+import { TrendingUp, Search, Copy, Check, Key, ExternalLink } from 'lucide-react';
 import { K_TYPE_OPTIONS, KType } from '@/types/stock';
 import { getRegionByCode, fetchKLineData, getRegionName, transformKLineData, saveQueryHistory } from '@/utils/stockApi';
 import { generateMAData } from '@/utils/ma';
 import { StockChart } from './StockChart';
 import type { KLineDataItem, StockQueryHistory, MALineDataItem } from '@/types/stock';
 import { copyToClipboard } from '@/utils/clipboard';
+import { hasApiToken } from '@/utils/configStorage';
 
 interface StockQueryProps {
   initialHistory?: StockQueryHistory;
+  onNavigateToSettings?: () => void;
 }
 
-export const StockQuery: React.FC<StockQueryProps> = ({ initialHistory }) => {
+export const StockQuery: React.FC<StockQueryProps> = ({ initialHistory, onNavigateToSettings }) => {
   const [stockCode, setStockCode] = useState('');
   const [kType, setKType] = useState<KType>('8');
   const [limit, setLimit] = useState('30');
@@ -20,6 +22,16 @@ export const StockQuery: React.FC<StockQueryProps> = ({ initialHistory }) => {
   const [chartData, setChartData] = useState<KLineDataItem[] | null>(null);
   const [maData, setMaData] = useState<MALineDataItem[] | null>(null);
   const [copied, setCopied] = useState(false);
+  const [hasToken, setHasToken] = useState<boolean | null>(null);
+
+  // 检查是否已配置API Token
+  useEffect(() => {
+    const checkToken = async () => {
+      const tokenExists = await hasApiToken();
+      setHasToken(tokenExists);
+    };
+    checkToken();
+  }, []);
 
   useEffect(() => {
     if (initialHistory) {
@@ -128,6 +140,68 @@ ${maRows.join('\n')}`;
       handleQuery();
     }
   };
+
+  // 显示引导页（检查中）
+  if (hasToken === null) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50">
+        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // 显示引导页（未配置API Token）
+  if (!hasToken) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Key className="w-8 h-8 text-blue-600" />
+          </div>
+          
+          <h3 className="text-xl font-bold text-gray-900 mb-2">
+            欢迎使用股票查询功能
+          </h3>
+          
+          <p className="text-gray-600 text-sm mb-6">
+            使用此功能需要配置API Token
+          </p>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
+            <p className="text-sm text-gray-700 mb-3">
+              <span className="font-medium">步骤1：</span> 前往以下网站注册账号并获取API Keys
+            </p>
+            <a 
+              href="https://itick.org/dashboard" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-white border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium"
+            >
+              <ExternalLink className="w-4 h-4" />
+              打开 itick.org/dashboard
+            </a>
+          </div>
+
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 text-left">
+            <p className="text-sm text-gray-700 mb-3">
+              <span className="font-medium">步骤2：</span> 配置您的API Token
+            </p>
+            <button
+              onClick={onNavigateToSettings}
+              className="w-full px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 font-medium"
+            >
+              <Key className="w-4 h-4" />
+              前往设置配置
+            </button>
+          </div>
+
+          <p className="text-xs text-gray-500">
+            配置完成后即可使用股票查询功能
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col">

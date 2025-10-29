@@ -41,7 +41,7 @@ export const StockChart: React.FC<StockChartProps> = ({ data, maData, stockCode,
         text: `${stockCode} K线图 + MA均线`,
         subtext: `周期: ${kTypeLabel} | 共 ${sortedData.length} 条数据`,
         left: 'center',
-        top: 15,
+        top: -5,
         textStyle: {
           fontSize: 18,
           fontWeight: 'bold',

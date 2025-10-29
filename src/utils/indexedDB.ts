@@ -1,18 +1,20 @@
 // IndexedDB 工具类
 
 const DB_NAME = 'PromptStockDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // 增加版本号以添加新的store
 
 export interface DBStores {
   prompts: 'prompts';
   folders: 'folders';
   stockHistory: 'stockHistory';
+  config: 'config';
 }
 
 const STORES: DBStores = {
   prompts: 'prompts',
   folders: 'folders',
   stockHistory: 'stockHistory',
+  config: 'config',
 };
 
 class IndexedDBManager {
@@ -48,6 +50,11 @@ class IndexedDBManager {
         if (!db.objectStoreNames.contains(STORES.stockHistory)) {
           const historyStore = db.createObjectStore(STORES.stockHistory, { keyPath: 'id' });
           historyStore.createIndex('queryTime', 'queryTime', { unique: false });
+        }
+
+        // Config store - 用于存储配置项如API_TOKEN
+        if (!db.objectStoreNames.contains(STORES.config)) {
+          db.createObjectStore(STORES.config, { keyPath: 'key' });
         }
       };
     });

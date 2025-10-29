@@ -9,4 +9,8 @@ export { StockChart } from './StockChart';
 export { StockHistory } from './StockHistory';
 export { FolderItem } from './FolderItem';
 export { AddFolderButton } from './AddFolderButton';
+export { SortableFolderItem } from './SortableFolderItem';
+export { SortablePromptItem } from './SortablePromptItem';
+export { DroppableFolderItem } from './DroppableFolderItem';
+export { ImportExport } from './ImportExport';
 
