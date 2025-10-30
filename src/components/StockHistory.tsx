@@ -73,7 +73,7 @@ export const StockHistory: React.FC<StockHistoryProps> = ({ onSelectHistory }) =
                   <TrendingUp className="w-4 h-4 text-blue-600" />
                   <span className="font-semibold text-gray-900">{history.stockCode}</span>
                   <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
-                    {getRegionName(history.region)}
+                    {history.stockName || getRegionName(history.region)}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-gray-600">

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Search, Copy, Check, Key, ExternalLink } from 'lucide-react';
+import { TrendingUp, Search, Copy, Check, Key, ExternalLink, FileText } from 'lucide-react';
 import { K_TYPE_OPTIONS, KType } from '@/types/stock';
 import { getRegionByCode, fetchKLineData, getRegionName, transformKLineData, saveQueryHistory } from '@/utils/stockApi';
 import { generateMAData } from '@/utils/ma';
 import { StockChart } from './StockChart';
 import type { KLineDataItem, StockQueryHistory, MALineDataItem } from '@/types/stock';
+import type { Prompt } from '@/types';
 import { copyToClipboard } from '@/utils/clipboard';
-import { hasApiToken } from '@/utils/configStorage';
+import { hasApiToken, getSelectedStockPromptId, saveSelectedStockPromptId } from '@/utils/configStorage';
+import * as promptStorage from '@/utils/promptStorage';
 
 interface StockQueryProps {
   initialHistory?: StockQueryHistory;
@@ -15,14 +17,19 @@ interface StockQueryProps {
 
 export const StockQuery: React.FC<StockQueryProps> = ({ initialHistory, onNavigateToSettings }) => {
   const [stockCode, setStockCode] = useState('');
+  const [stockName, setStockName] = useState('');
   const [kType, setKType] = useState<KType>('8');
-  const [limit, setLimit] = useState('30');
+  const [limit, setLimit] = useState('25');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [chartData, setChartData] = useState<KLineDataItem[] | null>(null);
   const [maData, setMaData] = useState<MALineDataItem[] | null>(null);
   const [copied, setCopied] = useState(false);
   const [hasToken, setHasToken] = useState<boolean | null>(null);
+  
+  // Prompt选择相关
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [selectedPromptId, setSelectedPromptId] = useState<string>('');
 
   // 检查是否已配置API Token
   useEffect(() => {
@@ -33,9 +40,28 @@ export const StockQuery: React.FC<StockQueryProps> = ({ initialHistory, onNaviga
     checkToken();
   }, []);
 
+  // 加载所有prompts
+  useEffect(() => {
+    const loadPrompts = async () => {
+      const allPrompts = await promptStorage.getPrompts();
+      setPrompts(allPrompts);
+    };
+    loadPrompts();
+  }, []);
+
+  // 加载已选择的prompt ID
+  useEffect(() => {
+    const loadSelectedPromptId = async () => {
+      const savedId = await getSelectedStockPromptId();
+      setSelectedPromptId(savedId);
+    };
+    loadSelectedPromptId();
+  }, []);
+
   useEffect(() => {
     if (initialHistory) {
       setStockCode(initialHistory.stockCode);
+      setStockName(initialHistory.stockName || '');
       setKType(initialHistory.kType);
       setLimit(initialHistory.limit.toString());
       setChartData(initialHistory.klineData);
@@ -83,6 +109,7 @@ export const StockQuery: React.FC<StockQueryProps> = ({ initialHistory, onNaviga
         await saveQueryHistory(
           {
             stockCode,
+            stockName: stockName.trim() || undefined,
             region,
             kType,
             limit: limitNum,
@@ -116,7 +143,10 @@ export const StockQuery: React.FC<StockQueryProps> = ({ initialHistory, onNaviga
       `${item.time}\t${item.ma5?.toFixed(2) || '-'}\t${item.ma10?.toFixed(2) || '-'}\t${item.ma20?.toFixed(2) || '-'}`
     );
 
-    const text = `股票代码: ${stockCode} (${getRegionName(getRegionByCode(stockCode))})
+    // 使用股票名称或默认的市场名称
+    const displayName = stockName.trim() || getRegionName(getRegionByCode(stockCode));
+    
+    const stockDataText = `股票代码: ${stockCode} (${displayName})
 K线周期: ${K_TYPE_OPTIONS.find(opt => opt.value === kType)?.label}
 数据条数: ${chartData.length}
 
@@ -128,11 +158,26 @@ ${klineRows.join('\n')}
 ${maHeader}
 ${maRows.join('\n')}`;
 
-    const success = await copyToClipboard(text);
+    // 如果选择了prompt，则组合prompt内容和股票数据
+    let finalText = stockDataText;
+    if (selectedPromptId) {
+      const selectedPrompt = prompts.find(p => p.id === selectedPromptId);
+      if (selectedPrompt) {
+        finalText = `${selectedPrompt.content}\n\n${stockDataText}`;
+      }
+    }
+
+    const success = await copyToClipboard(finalText);
     if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  // 处理prompt选择变化
+  const handlePromptChange = async (promptId: string) => {
+    setSelectedPromptId(promptId);
+    await saveSelectedStockPromptId(promptId);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -212,22 +257,42 @@ ${maRows.join('\n')}`;
           <h3 className="text-lg font-semibold text-gray-900">股票查询</h3>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            股票代码
-          </label>
-          <input
-            type="text"
-            value={stockCode}
-            onChange={(e) => setStockCode(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="例如：600519、000001"
-            disabled={loading}
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            自动识别：6-上证，0/3-深证，其他-港股
-          </p>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              股票代码
+            </label>
+            <input
+              type="text"
+              value={stockCode}
+              onChange={(e) => setStockCode(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="例如：600519"
+              disabled={loading}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              6-上证，0/3-深证
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              股票名称
+            </label>
+            <input
+              type="text"
+              value={stockName}
+              onChange={(e) => setStockName(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="例如：合锻智能"
+              disabled={loading}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              选填，用于标识
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -265,6 +330,30 @@ ${maRows.join('\n')}`;
               disabled={loading}
             />
           </div>
+        </div>
+
+        {/* Prompt选择 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            选择Prompt模板（可选）
+          </label>
+          <select
+            value={selectedPromptId}
+            onChange={(e) => handlePromptChange(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            disabled={loading}
+          >
+            <option value="">不使用Prompt模板</option>
+            {prompts.map((prompt) => (
+              <option key={prompt.id} value={prompt.id}>
+                {prompt.title}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            选择后，复制数据时会自动添加Prompt内容
+          </p>
         </div>
 
         {error && (

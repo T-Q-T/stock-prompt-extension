@@ -70,6 +70,7 @@ export interface KLineResponse {
 export interface StockQueryHistory {
   id: string;
   stockCode: string;
+  stockName?: string;            // 股票名称（可选）
   region: Region;
   kType: KType;
   limit: number;

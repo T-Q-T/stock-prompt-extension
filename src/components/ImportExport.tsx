@@ -3,7 +3,9 @@ import { Download, Upload, FileJson, CheckCircle, AlertCircle } from 'lucide-rea
 import { db } from '@/utils/indexedDB';
 import { storage } from '@/utils/storage';
 import { getApiToken, saveApiToken } from '@/utils/configStorage';
+import { getQueryHistories } from '@/utils/stockApi';
 import type { Prompt, Folder, Settings } from '@/types';
+import type { StockQueryHistory } from '@/types/stock';
 
 interface ExportData {
   version: string;
@@ -12,6 +14,7 @@ interface ExportData {
   settings?: Settings;
   prompts?: Prompt[];
   folders?: Folder[];
+  stockHistories?: StockQueryHistory[];
 }
 
 export const ImportExport: React.FC = () => {
@@ -19,6 +22,7 @@ export const ImportExport: React.FC = () => {
   const [exportApiToken, setExportApiToken] = useState(true);
   const [exportSettings, setExportSettings] = useState(true);
   const [exportPrompts, setExportPrompts] = useState(true);
+  const [exportStockHistories, setExportStockHistories] = useState(true);
   
   // 状态
   const [exporting, setExporting] = useState(false);
@@ -61,6 +65,14 @@ export const ImportExport: React.FC = () => {
         ]);
         exportData.prompts = prompts;
         exportData.folders = folders;
+      }
+
+      // 导出查询历史
+      if (exportStockHistories) {
+        const histories = await getQueryHistories();
+        if (histories && histories.length > 0) {
+          exportData.stockHistories = histories;
+        }
       }
 
       // 生成JSON文件
@@ -148,6 +160,18 @@ export const ImportExport: React.FC = () => {
           }
           importCount++;
         }
+      }
+
+      // 导入查询历史
+      if (importData.stockHistories && importData.stockHistories.length > 0) {
+        for (const history of importData.stockHistories) {
+          try {
+            await db.put('stockHistory', history);
+          } catch (err) {
+            console.error('Failed to import stock history:', history.id, err);
+          }
+        }
+        importCount++;
       }
 
       if (importCount > 0) {
@@ -259,11 +283,24 @@ export const ImportExport: React.FC = () => {
                 <div className="text-xs text-gray-500">导出所有Prompt内容和文件夹结构</div>
               </div>
             </label>
+
+            <label className="flex items-center gap-3 p-3 bg-white rounded-lg border border-green-200 hover:bg-green-50 transition-colors cursor-pointer">
+              <input
+                type="checkbox"
+                checked={exportStockHistories}
+                onChange={(e) => setExportStockHistories(e.target.checked)}
+                className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+              />
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-900">查询历史</div>
+                <div className="text-xs text-gray-500">导出所有股票查询历史记录</div>
+              </div>
+            </label>
           </div>
 
           <button
             onClick={handleExport}
-            disabled={exporting || (!exportApiToken && !exportSettings && !exportPrompts)}
+            disabled={exporting || (!exportApiToken && !exportSettings && !exportPrompts && !exportStockHistories)}
             className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {exporting ? (

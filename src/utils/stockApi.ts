@@ -134,6 +134,7 @@ export const transformKLineData = (rawData: KLineRawData[]): KLineDataItem[] => 
 
 /**
  * 保存查询历史（使用IndexedDB）
+ * 每个股票代码只保留最新的一条记录
  */
 export const saveQueryHistory = async (
   history: Omit<StockQueryHistory, 'id' | 'queryTime' | 'klineData' | 'maData'>,
@@ -142,17 +143,28 @@ export const saveQueryHistory = async (
   try {
     const maData = generateMAData(klineData);
     
+    // 先查找是否已存在相同股票代码的记录
+    const existingHistories = await getQueryHistories();
+    const existingHistory = existingHistories.find(h => h.stockCode === history.stockCode);
+    
+    // 如果存在，删除旧记录
+    if (existingHistory) {
+      await db.delete('stockHistory', existingHistory.id);
+      console.log(`🔄 Updated existing history for stock: ${history.stockCode}`);
+    }
+    
     const newHistory: StockQueryHistory = {
       ...history,
       id: Date.now().toString(36) + Math.random().toString(36).substr(2),
       queryTime: Date.now(),
       klineData,
       maData,
+      stockName: history.stockName,
     };
     
     await db.add('stockHistory', newHistory);
     
-    // 保持最多50条，删除旧的
+    // 保持最多50条，删除最旧的
     const histories = await getQueryHistories();
     if (histories.length > 50) {
       histories.sort((a, b) => b.queryTime - a.queryTime);
