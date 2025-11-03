@@ -4,6 +4,9 @@ export default {
     "./popup.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  // Scope all Tailwind utilities to the extension root
+  // This prevents conflicts with host page styles
+  important: '#prompt-stock-root',
   theme: {
     extend: {
       colors: {

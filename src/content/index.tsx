@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
+// Import CSS - Vite will handle it, and PostCSS plugin will scope it
 import '@/styles/content.css';
 
 // Create a container for our React app

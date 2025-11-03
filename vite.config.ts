@@ -47,6 +47,7 @@ function copyFilesPlugin() {
 export default defineConfig({
   plugins: [react(), copyFilesPlugin()],
   build: {
+    emptyOutDir: false, // 避免清空 dist 目录，防止文件被浏览器锁定时构建失败
     rollupOptions: {
       input: {
         content: resolve(__dirname, 'src/content/index.tsx'),

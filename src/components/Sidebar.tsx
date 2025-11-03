@@ -328,7 +328,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           >
             <div className="flex items-center justify-center gap-1.5">
               <History className="w-4 h-4" />
-              <span>查询历史</span>
+              <span>我的股票</span>
             </div>
             {activeTab === 'history' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600" />

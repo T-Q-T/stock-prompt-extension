@@ -18,6 +18,8 @@ interface StockQueryProps {
 export const StockQuery: React.FC<StockQueryProps> = ({ initialHistory, onNavigateToSettings }) => {
   const [stockCode, setStockCode] = useState('');
   const [stockName, setStockName] = useState('');
+  const [costPrice, setCostPrice] = useState('');
+  const [holdingShares, setHoldingShares] = useState('');
   const [kType, setKType] = useState<KType>('8');
   const [limit, setLimit] = useState('25');
   const [loading, setLoading] = useState(false);
@@ -62,6 +64,8 @@ export const StockQuery: React.FC<StockQueryProps> = ({ initialHistory, onNaviga
     if (initialHistory) {
       setStockCode(initialHistory.stockCode);
       setStockName(initialHistory.stockName || '');
+      setCostPrice(initialHistory.costPrice?.toString() || '');
+      setHoldingShares(initialHistory.holdingShares?.toString() || '');
       setKType(initialHistory.kType);
       setLimit(initialHistory.limit.toString());
       setChartData(initialHistory.klineData);
@@ -110,6 +114,8 @@ export const StockQuery: React.FC<StockQueryProps> = ({ initialHistory, onNaviga
           {
             stockCode,
             stockName: stockName.trim() || undefined,
+            costPrice: costPrice.trim() ? parseFloat(costPrice) : undefined,
+            holdingShares: holdingShares.trim() ? parseFloat(holdingShares) : undefined,
             region,
             kType,
             limit: limitNum,
@@ -298,6 +304,46 @@ ${maRows.join('\n')}`;
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
+              成本价（元/股）
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={costPrice}
+              onChange={(e) => setCostPrice(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="例如：15.80"
+              disabled={loading}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              选填，用于K线标注
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              持仓股数
+            </label>
+            <input
+              type="number"
+              step="1"
+              value={holdingShares}
+              onChange={(e) => setHoldingShares(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="例如：1000"
+              disabled={loading}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              选填，用于记录
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               K线周期
             </label>
             <select
@@ -407,7 +453,13 @@ ${maRows.join('\n')}`;
       {/* 图表展示区域 */}
       {chartData && maData && (
         <div className="flex-1 overflow-hidden bg-white">
-          <StockChart data={chartData} maData={maData} stockCode={stockCode} kType={kType} />
+          <StockChart 
+            data={chartData} 
+            maData={maData} 
+            stockCode={stockCode} 
+            kType={kType}
+            costPrice={costPrice.trim() ? parseFloat(costPrice) : undefined}
+          />
         </div>
       )}
 

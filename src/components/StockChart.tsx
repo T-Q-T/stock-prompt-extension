@@ -9,9 +9,10 @@ interface StockChartProps {
   maData: MALineDataItem[];
   stockCode: string;
   kType: KType;
+  costPrice?: number;
 }
 
-export const StockChart: React.FC<StockChartProps> = ({ data, maData, stockCode, kType }) => {
+export const StockChart: React.FC<StockChartProps> = ({ data, maData, stockCode, kType, costPrice }) => {
   const option: EChartsOption = useMemo(() => {
     // 数据按时间排序（从旧到新）
     const sortedData = [...data].sort((a, b) => a.timestamp - b.timestamp);
@@ -120,7 +121,7 @@ export const StockChart: React.FC<StockChartProps> = ({ data, maData, stockCode,
         },
       },
       legend: {
-        data: ['K线', 'MA5', 'MA10', 'MA20', '成交量'],
+        data: costPrice ? ['K线', 'MA5', 'MA10', 'MA20', '成交量', '成本价'] : ['K线', 'MA5', 'MA10', 'MA20', '成交量'],
         top: 45,
         textStyle: {
           fontSize: 12,
@@ -270,6 +271,31 @@ export const StockChart: React.FC<StockChartProps> = ({ data, maData, stockCode,
               borderWidth: 2,
             },
           },
+          markLine: costPrice ? {
+            silent: false,
+            symbol: 'none',
+            label: {
+              position: 'end',
+              formatter: `成本价: ${costPrice.toFixed(2)}`,
+              fontSize: 12,
+              color: '#ff6b00',
+              fontWeight: 'bold',
+              backgroundColor: 'rgba(255, 107, 0, 0.1)',
+              padding: [4, 8],
+              borderRadius: 4,
+            },
+            lineStyle: {
+              color: '#ff6b00',
+              width: 2,
+              type: 'solid',
+            },
+            data: [
+              {
+                name: '成本价',
+                yAxis: costPrice,
+              },
+            ],
+          } : undefined,
         },
         {
           name: 'MA5',
@@ -333,7 +359,7 @@ export const StockChart: React.FC<StockChartProps> = ({ data, maData, stockCode,
         },
       ],
     };
-  }, [data, maData, stockCode, kType]);
+  }, [data, maData, stockCode, kType, costPrice]);
 
   return (
     <div className="w-full h-full p-3">

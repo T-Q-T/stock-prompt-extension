@@ -78,5 +78,7 @@ export interface StockQueryHistory {
   resultCount: number;
   klineData: KLineDataItem[];    // K线完整数据
   maData: MALineDataItem[];      // MA均线数据
+  costPrice?: number;            // 成本价（可选）
+  holdingShares?: number;        // 持仓股数（可选）
 }
 
